@@ -3,6 +3,10 @@ package com.ra.service.product;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.ra.model.dto.product.ProductRequestDTO;
+import com.ra.repository.CategoryRepository;
+import com.ra.service.UploadService;
+import com.ra.service.category.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +18,12 @@ import com.ra.repository.ProductRepository;
 public class ProductServiceImpl implements ProductService {
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private UploadService uploadService;
+
+    @Autowired
+    private CategoryService categoryService;
 
     @Override
     public List<ProductResponseDTO> findAll() {
@@ -39,8 +49,30 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Product save(Product product) {
-        return productRepository.save(product);
+    public ProductResponseDTO save(ProductRequestDTO productDTO) {
+        // upload file
+        String fileName = uploadService.uploadFile(productDTO.getImage());
+
+        // convert from DTO => Entity
+        Product product = Product.builder()
+                .productName(productDTO.getProductName())
+                .price(productDTO.getPrice())
+                .image(fileName)
+                .status(productDTO.getStatus())
+                .category(categoryService.findById(productDTO.getCategoryId()))
+                .build();
+
+        Product productNew = productRepository.save(product);
+        // convert from Entity => DTO
+        return ProductResponseDTO
+                .builder()
+                .id(productNew.getId())
+                .productName(productNew.getProductName())
+                .image(productNew.getImage())
+                .price(productNew.getPrice())
+                .status(productNew.getStatus())
+                .categoryName(productNew.getCategory().getCategoryName())
+                .build();
     }
 
     @Override

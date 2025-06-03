@@ -1,6 +1,7 @@
 package com.ra.controller;
 
 import com.ra.model.dto.DataError;
+import com.ra.model.dto.product.ProductRequestDTO;
 import com.ra.model.dto.product.ProductResponseDTO;
 import com.ra.model.entity.Product;
 import com.ra.service.product.ProductService;
@@ -24,29 +25,29 @@ public class ProductController {
     }
 
     @PostMapping("/add")
-    public ResponseEntity<Product> addProduct(@RequestBody Product product) {
-        Product newProduct = productService.save(product);
-        return new ResponseEntity<>(newProduct, HttpStatus.OK);
+    public ResponseEntity<ProductResponseDTO> addProduct(@ModelAttribute  ProductRequestDTO productRequestDTO) {
+        ProductResponseDTO productResponseDTO = productService.save(productRequestDTO);
+        return new ResponseEntity<>(productResponseDTO, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getProduct(@PathVariable Long id) {
         Product product = productService.findById(id);
         if (product == null) {
-            return new ResponseEntity<>(new DataError("product Not found!", 404),HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(new DataError("product Not found!", 404), HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(product, HttpStatus.OK);
     }
 
-    @PutMapping("/edit/{id}")
-    public ResponseEntity<?> editProduct(@PathVariable Long id, @RequestBody Product product) {
-        if (productService.findById(id) != null) {
-            product.setId(id);
-            productService.save(product);
-            return new ResponseEntity<>(product, HttpStatus.OK);
-        }
-        return new ResponseEntity<>(new DataError("product Not found!", 404),HttpStatus.NOT_FOUND);
-    }
+//    @PutMapping("/edit/{id}")
+//    public ResponseEntity<?> editProduct(@PathVariable Long id, @RequestBody Product product) {
+//        if (productService.findById(id) != null) {
+//            product.setId(id);
+//            productService.save(product);
+//            return new ResponseEntity<>(product, HttpStatus.OK);
+//        }
+//        return new ResponseEntity<>(new DataError("product Not found!", 404), HttpStatus.NOT_FOUND);
+//    }
 
     @DeleteMapping("delete/{id}")
     public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
@@ -54,6 +55,6 @@ public class ProductController {
             productService.delete(id);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
-        return new ResponseEntity<>(new DataError("product Not found!", 404),HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(new DataError("product Not found!", 404), HttpStatus.NOT_FOUND);
     }
 }
