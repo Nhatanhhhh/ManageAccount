@@ -6,18 +6,20 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Set;
+
 @Entity
-@Table(name = "department")
+@Table(name = "categories")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class Department {
+public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "name", length = 100, unique = true, nullable = false)
-    private String name;
-    @Column(name = "status")
-    private Boolean status;
+    @Column(name = "category_name", length = 100, unique = true, nullable = false)
+    private String categoryName;
+    @Column(name = "category_status")
+    private Boolean categoryStatus;
 }
