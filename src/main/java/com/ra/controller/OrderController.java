@@ -4,6 +4,10 @@ import com.ra.model.dto.orderDTO.OrderResponseDTO;
 import com.ra.service.order.OrderService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -23,6 +27,13 @@ public class OrderController {
 
     @GetMapping("/user/orders")
     @Operation(summary = "View all orders")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List of orders",
+                    content = @Content(schema = @Schema(implementation = Page.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid sortBy", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
+    })
     public ResponseEntity<Page<OrderResponseDTO>> getAllOrders(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "limit", defaultValue = "3") int limit,
@@ -37,6 +48,13 @@ public class OrderController {
 
     @Operation(summary = "Change status with orderId")
     @PatchMapping("/admin/orders/status/{id}")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Status updated",
+                    content = @Content(schema = @Schema(implementation = OrderResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
+    })
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<OrderResponseDTO> changeOrderStatus(@PathVariable Long id, @RequestParam Boolean status) {

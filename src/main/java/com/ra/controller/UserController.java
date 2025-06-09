@@ -5,6 +5,11 @@ import com.ra.model.dto.userstatusDTO.UserStatusRequestDTO;
 import com.ra.model.dto.userstatusDTO.UserStatusResponseDTO;
 import com.ra.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +31,13 @@ public class UserController {
 
     @GetMapping
     @Operation(summary = "View all users")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List of users",
+                    content = @Content(schema = @Schema(implementation = Page.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid sortBy", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
+    })
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Page<UserManageResponseDTO>> getAllUsers(
             @RequestParam(name = "page", defaultValue = "0") int page,
@@ -42,7 +54,17 @@ public class UserController {
     @PutMapping("/change-status/{id}")
     @Operation(summary = "Change status with userId")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<UserStatusResponseDTO> changeUserStatus(@PathVariable Long id,@Valid @RequestBody UserStatusRequestDTO request) {
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Status updated",
+                    content = @Content(schema = @Schema(implementation = UserStatusResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
+            @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
+    })
+    public ResponseEntity<UserStatusResponseDTO> changeUserStatus(
+            @Parameter(description = "User ID", example = "1") @PathVariable Long id,
+            @Valid @RequestBody @Parameter(description = "Status update details") UserStatusRequestDTO request) {
         UserStatusResponseDTO response = usersService.changeUserStatus(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }

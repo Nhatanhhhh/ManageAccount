@@ -4,6 +4,10 @@ import com.ra.model.dto.categoryDTO.CategoryRequestDTO;
 import com.ra.model.dto.categoryDTO.CategoryResponseDTO;
 import com.ra.service.category.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +33,13 @@ public class CategoryController {
     @GetMapping
     @Operation(summary = "View all category")
     @PreAuthorize("hasAuthority('ADMIN')")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List of categories",
+                    content = @Content(schema = @Schema(implementation = Map.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid sortBy", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
+    })
     public ResponseEntity<Page<CategoryResponseDTO>> getAllCategories(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "limit", defaultValue = "3") int limit,
@@ -70,6 +81,14 @@ public class CategoryController {
 
     @Operation(summary = "Edit category with categoryId")
     @PutMapping("/edit/{id}")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Category updated",
+                    content = @Content(schema = @Schema(implementation = CategoryResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Category not found", content = @Content)
+    })
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<CategoryResponseDTO> updateCategory(@PathVariable Long id, @Valid @RequestBody CategoryRequestDTO requestDTO) {
         CategoryResponseDTO categoryResponseDTO = categoryService.updateCategory(id, requestDTO);
@@ -78,6 +97,13 @@ public class CategoryController {
 
     @Operation(summary = "Edit status category with categoryId")
     @PatchMapping("/edit/status/{id}")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Status updated",
+                    content = @Content(schema = @Schema(implementation = CategoryResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Category not found", content = @Content)
+    })
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<CategoryResponseDTO> changeCategoryStatus(@PathVariable Long id, @RequestParam Boolean status) {
         try {
