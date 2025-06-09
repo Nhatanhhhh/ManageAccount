@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class Sessiondemo02Application {
+public class ApiwebserviceApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(Sessiondemo02Application.class, args);
+        SpringApplication.run(ApiwebserviceApplication.class, args);
     }
 
 }
