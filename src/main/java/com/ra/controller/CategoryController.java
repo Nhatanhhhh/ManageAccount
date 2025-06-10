@@ -1,59 +1,112 @@
 package com.ra.controller;
 
-import com.ra.model.dto.DataError;
-import com.ra.model.entity.Category;
+import com.ra.model.dto.categoryDTO.CategoryRequestDTO;
+import com.ra.model.dto.categoryDTO.CategoryResponseDTO;
 import com.ra.service.category.CategoryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/categories")
+@RequestMapping("/api/v1/admin/categories")
+@SecurityRequirement(name = "bearerAuth")
+@Tag(name = "Category", description = "Controller manage category")
 public class CategoryController {
     @Autowired
     private CategoryService categoryService;
 
     @GetMapping
-    public ResponseEntity<List<Category>> index() {
-        List<Category> categories = categoryService.findAll();
+    @Operation(summary = "View all category")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List of categories",
+                    content = @Content(schema = @Schema(implementation = Map.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid sortBy", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
+    })
+    public ResponseEntity<Page<CategoryResponseDTO>> getAllCategories(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "limit", defaultValue = "3") int limit,
+            @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
+            @RequestParam(name = "orderBy", defaultValue = "asc") String orderBy,
+            @RequestParam(name = "searchText", required = false) String searchText,
+            @RequestParam(name = "status", required = false) Boolean status
+    ) {
+        categoryService.validateSortBy(sortBy);
+
+        Sort sort = orderBy.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, limit, sort);
+        Page<CategoryResponseDTO> categories;
+        if (searchText != null && !searchText.isEmpty() && status != null) {
+            categories = categoryService.searchAndFilterCategories(searchText, status, pageable);
+        } else if (searchText != null && !searchText.isEmpty()) {
+            categories = categoryService.searchCategoriesByName(searchText, pageable);
+        } else if (status != null) {
+            categories = categoryService.filterCategoriesByStatus(status, pageable);
+        } else {
+            categories = categoryService.getAllCategories(pageable);
+        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("categories", categories.getContent());
+        response.put("currentPage", categories.getNumber());
+        response.put("totalItems", categories.getTotalElements());
+        response.put("totalPages", categories.getTotalPages());
+
         return new ResponseEntity<>(categories, HttpStatus.OK);
     }
 
+    @Operation(summary = "Add new category")
     @PostMapping("/add")
-    public ResponseEntity<Category> create(@RequestBody Category category) {
-        Category categoryNew = categoryService.save(category);
-        return new ResponseEntity<>(categoryNew, HttpStatus.CREATED);
+    public ResponseEntity<CategoryResponseDTO> createCategory(@Valid @RequestBody CategoryRequestDTO requestDTO) {
+        CategoryResponseDTO categoryResponseDTO = categoryService.createCategory(requestDTO);
+        return new ResponseEntity<>(categoryResponseDTO, HttpStatus.OK);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<?> findById(@PathVariable Long id) {
-        Category category = categoryService.findById(id);
-        if (category == null) {
-            return new ResponseEntity<>(new DataError("category Not found!", 404), HttpStatus.NOT_FOUND);
-        }
-        return new ResponseEntity<>(category, HttpStatus.OK);
-    }
-
+    @Operation(summary = "Edit category with categoryId")
     @PutMapping("/edit/{id}")
-    public ResponseEntity<?> edit(@PathVariable Long id, @RequestBody Category category) {
-        if (categoryService.findById(id) != null) {
-            category.setId(id);
-            Category categoryEdited = categoryService.save(category);
-            return new ResponseEntity<>(categoryEdited, HttpStatus.OK);
-        }
-        return new ResponseEntity<>(new DataError("category Not found!", 404), HttpStatus.NOT_FOUND);
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Category updated",
+                    content = @Content(schema = @Schema(implementation = CategoryResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Category not found", content = @Content)
+    })
+    public ResponseEntity<CategoryResponseDTO> updateCategory(@PathVariable Long id, @Valid @RequestBody CategoryRequestDTO requestDTO) {
+        CategoryResponseDTO categoryResponseDTO = categoryService.updateCategory(id, requestDTO);
+        return new ResponseEntity<>(categoryResponseDTO, HttpStatus.OK);
     }
 
-    @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
-        Category category = categoryService.findById(id);
-        if (category == null) {
-            return new ResponseEntity<>(new DataError("category Not found!", 404), HttpStatus.NOT_FOUND);
+    @Operation(summary = "Edit status category with categoryId")
+    @PatchMapping("/edit/status/{id}")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Status updated",
+                    content = @Content(schema = @Schema(implementation = CategoryResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Category not found", content = @Content)
+    })
+    public ResponseEntity<CategoryResponseDTO> changeCategoryStatus(@PathVariable Long id, @RequestParam Boolean status) {
+        try {
+            CategoryResponseDTO responseDTO = categoryService.changeCategoryStatus(id, status);
+            return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
         }
-        categoryService.delete(id);
-        return new ResponseEntity<>(category, HttpStatus.NO_CONTENT);
     }
 }
