@@ -1,0 +1,65 @@
+package com.ra.controller;
+
+import com.ra.model.dto.orderDTO.OrderResponseDTO;
+import com.ra.service.order.OrderService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1")
+@Tag(name = "Order", description = "Controller manage order")
+public class OrderController {
+    @Autowired
+    private OrderService orderService;
+
+    @GetMapping("/user/orders")
+    @Operation(summary = "View all orders")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List of orders",
+                    content = @Content(schema = @Schema(implementation = Page.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid sortBy", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
+    })
+    public ResponseEntity<Page<OrderResponseDTO>> getAllOrders(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "limit", defaultValue = "3") int limit,
+            @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
+            @RequestParam(name = "orderBy", defaultValue = "asc") String orderBy
+    ) {
+        Sort sort = orderBy.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, limit, sort);
+        Page<OrderResponseDTO> orders = orderService.getAllOrders(pageable);
+        return new ResponseEntity<>(orders, HttpStatus.OK);
+    }
+
+    @Operation(summary = "Change status with orderId")
+    @PatchMapping("/admin/orders/status/{id}")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Status updated",
+                    content = @Content(schema = @Schema(implementation = OrderResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
+    })
+
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<OrderResponseDTO> changeOrderStatus(@PathVariable Long id, @RequestParam Boolean status) {
+        OrderResponseDTO orderResponseDTO = orderService.changeOrderStatus(id, status);
+        return new ResponseEntity<>(orderResponseDTO, HttpStatus.OK);
+    }
+}
