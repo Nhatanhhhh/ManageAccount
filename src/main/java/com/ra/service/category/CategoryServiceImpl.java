@@ -19,6 +19,7 @@ public class CategoryServiceImpl implements CategoryService {
     private CategoryRepository categoryRepository;
 
     @Override
+    @PreAuthorize("hasAuthority('ADMIN', 'MANAGER')")
     public Page<CategoryResponseDTO> getAllCategories(Pageable pageable) {
         return categoryRepository.findAll(pageable)
                 .map(this::convertToResponseDTO);
